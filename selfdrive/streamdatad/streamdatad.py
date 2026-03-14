@@ -173,7 +173,7 @@ class Streamer:
     self.sm = sm if sm else messaging.SubMaster([
       'modelV2', 'controlsState', 'radarState', 'liveCalibration',
       'driverMonitoringState', 'carState', 'longitudinalPlan',
-      'uploaderState'
+      'uploaderState', 'carControl'
     ])
     self.rk = Ratekeeper(MESSAGE_HZ) # Ratekeeper for loop
     self.last_periodic_time = 0 # Track last periodic task
@@ -273,6 +273,41 @@ class Streamer:
     update_dict_from_sm(data, sm['driverMonitoringState'], ["isActiveMode"])
     data["h"] = sm['liveCalibration'].to_dict().get("height", [None])[0]
     update_dict_from_sm(data, sm['carState'], ["vEgoCluster"])
+    cs = sm['carState']
+    cc = sm['carControl']
+
+    data['ae'] = cs.aEgo
+
+    accel = cc.actuators.accel
+    state = sm['controlsState'].state
+
+    if state in [log.ControlsState.OpenpilotState.enabled, log.ControlsState.OpenpilotState.softDisabling]:
+        # Proton-specific: The car uses a /15 and /18 scale.
+        # We use a slightly higher denominator (2.5) to ensure the bar
+        # doesn't hit 100% during every tiny cruise adjustment.
+        data['g'] = pow(max(0.0, accel) / 2.5, 2) if accel > 0.15 else 0.0
+        data['b'] = abs(min(0.0, accel)) / 4.0 if accel < -0.15 else 0.0
+    else:
+        data['g'] = cs.gas
+        data['b'] = cs.brake
+
+    # Optional: Ensure values stay between 0 and 1 for the UI
+    data['g'] = min(1.0, data['g'])
+    data['b'] = min(1.0, data['b'])
+
+    # Identify override type
+    # 0: No override, 1: Steering (Lateral), 2: Gas (Longitudinal), 3: Both
+    override_type = 0
+    if state == log.ControlsState.OpenpilotState.overriding:
+        if cs.steeringPressed and cs.gasPressed:
+            override_type = 3
+        elif cs.steeringPressed:
+            override_type = 1
+        elif cs.gasPressed:
+            override_type = 2
+
+    data['ov'] = override_type
+
     update_dict_from_sm(data, sm['longitudinalPlan'], ["personality"])
     data = quantize(data)
     try:
