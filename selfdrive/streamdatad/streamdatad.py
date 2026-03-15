@@ -328,7 +328,7 @@ class Streamer:
       f"Connecting to\n{attempt_ssid}" if (attempt_ssid := self.wifi_connect_attempt_ssid) else self.active_wlan_ssid
     sett['hotspotEnabled'] = self.hotspot_enabled
     sett['hotspotIp'] = self.hotspot_ip
-    sett['networkType'] = NETWORK_TYPES[KA2.get_network_type()]
+    sett['networkType'] = "<unavailable>"#NETWORK_TYPES[KA2.get_network_type()]
     sett['remainingDataUpload'] = f"{int(self.sm['uploaderState'].immediateQueueSize)} MB"
 
     if 0 <= self.send_car_names_cnt < 3:
