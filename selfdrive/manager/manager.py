@@ -135,6 +135,8 @@ def manager_thread() -> None:
   pm = messaging.PubMaster(['managerState'])
 
   write_onroad_params(False, params)
+  cloudlog.info(f"Manager starting, ignore list: {ignore}")
+  print(f"Manager starting, ignore list: {ignore}")
   ensure_running(managed_processes.values(), False, params=params, CP=sm['carParams'], not_run=ignore)
 
   started_prev = False

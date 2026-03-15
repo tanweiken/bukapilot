@@ -51,8 +51,15 @@ def nativelauncher(pargs: list[str], cwd: str, name: str) -> None:
   os.environ['MANAGER_DAEMON'] = name
 
   # exec the process
+  cloudlog.info(f"nativelauncher: {name} in {cwd} with {pargs}")
+  print(f"nativelauncher: {name} in {cwd} with {pargs}")
   os.chdir(cwd)
-  os.execvp(pargs[0], pargs)
+  try:
+    os.execvp(pargs[0], pargs)
+  except Exception as e:
+    cloudlog.exception(f"nativelauncher failed for {name}")
+    print(f"nativelauncher failed for {name}: {e}")
+    os._exit(1)
 
 
 def join_process(process: Process, timeout: float) -> None:
