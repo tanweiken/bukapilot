@@ -55,7 +55,6 @@ def nativelauncher(pargs: list[str], cwd: str, name: str) -> None:
     import socket as _socket
     xdg_dir = os.environ.get('XDG_RUNTIME_DIR', '/var/tmp/weston')
     wl_disp = os.environ.get('WAYLAND_DISPLAY', 'wayland-0')
-    qt_qpa_platform = os.environ.get('QT_QPA_PLATFORM', 'wayland-egl')
     socket_path = os.path.join(xdg_dir, wl_disp)
     deadline = time.monotonic() + 30
     connected = False
@@ -73,7 +72,8 @@ def nativelauncher(pargs: list[str], cwd: str, name: str) -> None:
       # ensure UI has the same environment that works in manual SSH tests
       os.environ['XDG_RUNTIME_DIR'] = xdg_dir
       os.environ['WAYLAND_DISPLAY'] = wl_disp
-      os.environ['QT_QPA_PLATFORM'] = qt_qpa_platform
+      os.environ['QT_QPA_PLATFORM'] = 'wayland-egl'
+      os.environ['SCALE'] = '0.88'
     else:
       cloudlog.warning(f"UI: Wayland socket not connectable after 30s at {socket_path}, launching anyway")
 
