@@ -52,16 +52,30 @@ def nativelauncher(pargs: list[str], cwd: str, name: str) -> None:
 
   # Wait for Wayland socket before launching UI, to avoid crash-looping at boot
   if name == "ui":
+    import socket as _socket
     xdg_dir = os.environ.get('XDG_RUNTIME_DIR', '/var/tmp/weston')
     wl_disp = os.environ.get('WAYLAND_DISPLAY', 'wayland-0')
+    qt_qpa_platform = os.environ.get('QT_QPA_PLATFORM', 'wayland-egl')
     socket_path = os.path.join(xdg_dir, wl_disp)
     deadline = time.monotonic() + 30
-    while not os.path.exists(socket_path) and time.monotonic() < deadline:
-      time.sleep(0.5)
-    if os.path.exists(socket_path):
-      cloudlog.info(f"UI: Wayland socket ready at {socket_path}")
+    connected = False
+    while time.monotonic() < deadline:
+      try:
+        s = _socket.socket(_socket.AF_UNIX, _socket.SOCK_STREAM)
+        s.connect(socket_path)
+        s.close()
+        connected = True
+        break
+      except (FileNotFoundError, ConnectionRefusedError, PermissionError):
+        time.sleep(0.5)
+    if connected:
+      cloudlog.info(f"UI: Wayland socket connectable at {socket_path}")
+      # ensure UI has the same environment that works in manual SSH tests
+      os.environ['XDG_RUNTIME_DIR'] = xdg_dir
+      os.environ['WAYLAND_DISPLAY'] = wl_disp
+      os.environ['QT_QPA_PLATFORM'] = qt_qpa_platform
     else:
-      cloudlog.warning(f"UI: Wayland socket not found after 30s at {socket_path}, launching anyway")
+      cloudlog.warning(f"UI: Wayland socket not connectable after 30s at {socket_path}, launching anyway")
 
   # exec the process
   cloudlog.info(f"nativelauncher: {name} in {cwd} with {pargs}")
