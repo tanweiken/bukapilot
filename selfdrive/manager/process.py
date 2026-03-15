@@ -50,19 +50,18 @@ def launcher(proc: str, name: str) -> None:
 def nativelauncher(pargs: list[str], cwd: str, name: str) -> None:
   os.environ['MANAGER_DAEMON'] = name
 
-  # Ka2 UI debug: check socket visibility
+  # Wait for Wayland socket before launching UI, to avoid crash-looping at boot
   if name == "ui":
-    xdg_dir = os.environ.get('XDG_RUNTIME_DIR', 'NOT_SET')
+    xdg_dir = os.environ.get('XDG_RUNTIME_DIR', '/var/tmp/weston')
     wl_disp = os.environ.get('WAYLAND_DISPLAY', 'wayland-0')
     socket_path = os.path.join(xdg_dir, wl_disp)
-    exists = os.path.exists(socket_path)
-    try:
-        stat = os.stat(socket_path) if exists else "N/A"
-    except Exception as e:
-        stat = f"Error: {e}"
-    msg = f"UI Launch Diagnostics: name={name}, XDG_RUNTIME_DIR={xdg_dir}, WAYLAND_DISPLAY={wl_disp}, socket_path={socket_path}, exists={exists}, stat={stat}, uid={os.getuid()}, gid={os.getgid()}"
-    cloudlog.info(msg)
-    print(msg)
+    deadline = time.monotonic() + 30
+    while not os.path.exists(socket_path) and time.monotonic() < deadline:
+      time.sleep(0.5)
+    if os.path.exists(socket_path):
+      cloudlog.info(f"UI: Wayland socket ready at {socket_path}")
+    else:
+      cloudlog.warning(f"UI: Wayland socket not found after 30s at {socket_path}, launching anyway")
 
   # exec the process
   cloudlog.info(f"nativelauncher: {name} in {cwd} with {pargs}")
