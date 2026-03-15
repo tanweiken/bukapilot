@@ -50,6 +50,20 @@ def launcher(proc: str, name: str) -> None:
 def nativelauncher(pargs: list[str], cwd: str, name: str) -> None:
   os.environ['MANAGER_DAEMON'] = name
 
+  # Ka2 UI debug: check socket visibility
+  if name == "ui":
+    xdg_dir = os.environ.get('XDG_RUNTIME_DIR', 'NOT_SET')
+    wl_disp = os.environ.get('WAYLAND_DISPLAY', 'wayland-0')
+    socket_path = os.path.join(xdg_dir, wl_disp)
+    exists = os.path.exists(socket_path)
+    try:
+        stat = os.stat(socket_path) if exists else "N/A"
+    except Exception as e:
+        stat = f"Error: {e}"
+    msg = f"UI Launch Diagnostics: name={name}, XDG_RUNTIME_DIR={xdg_dir}, WAYLAND_DISPLAY={wl_disp}, socket_path={socket_path}, exists={exists}, stat={stat}, uid={os.getuid()}, gid={os.getgid()}"
+    cloudlog.info(msg)
+    print(msg)
+
   # exec the process
   cloudlog.info(f"nativelauncher: {name} in {cwd} with {pargs}")
   print(f"nativelauncher: {name} in {cwd} with {pargs}")
