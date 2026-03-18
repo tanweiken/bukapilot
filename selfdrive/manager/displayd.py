@@ -20,13 +20,25 @@ def main():
 
       if last_status is None:
         last_status = status
-
+        
       if status != last_status:
         cloudlog.warning(f"displayd: display status changed to {status}")
         if status == "connected":
-          # Force kill any hanging UI process to ensure a clean start on the new display
+          # 1. Restart Weston to ensure it picks up the new output and creates a fresh socket
+          cloudlog.info("displayd: restarting weston")
+          os.system("sudo systemctl restart weston")
+          
+          # 2. Wait for the Wayland socket to appear
+          socket_path = "/var/tmp/weston/wayland-0"
+          for _ in range(20):
+            if os.path.exists(socket_path):
+              cloudlog.info("displayd: wayland socket is ready")
+              break
+            time.sleep(0.5)
+          
+          # 3. Force kill UI process to ensure it connects to the fresh Weston instance
           os.system("pkill -SIGKILL ui")
-
+        
       last_status = status
     except Exception:
       cloudlog.exception("displayd: error")
