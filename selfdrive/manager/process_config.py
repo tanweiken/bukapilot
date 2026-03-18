@@ -44,6 +44,9 @@ def only_offroad(started, params, CP: car.CarParams) -> bool:
 def format_sd(started: bool, params: Params, CP: car.CarParams) -> bool:
   return params.get_bool("FormatSDCard")
 
+def ui_visible(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return params.get_bool("DisplayConnected")
+
 procs = [
   #DaemonProcess("manage_athenad", "selfdrive.athena.manage_athenad", "AthenadPid"),
 
@@ -94,7 +97,8 @@ procs = [
   # stream data
   PythonProcess("streamdatad", "selfdrive.streamdatad.streamdatad", always_run, enabled=not PC),
   PythonProcess("sdformatterd", "system.hardware.ka2.formatdevice", format_sd, enabled=not PC),
-  PythonProcess("setapnd", "system.hardware.ka2.setapn", always_run, enabled=KA2)
+  PythonProcess("setapnd", "system.hardware.ka2.setapn", always_run, enabled=KA2),
+  PythonProcess("displayd", "selfdrive.manager.displayd", always_run, enabled=KA2),
 ]
 
 managed_processes = {p.name: p for p in procs}
