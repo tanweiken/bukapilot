@@ -45,7 +45,7 @@ def format_sd(started: bool, params: Params, CP: car.CarParams) -> bool:
   return params.get_bool("FormatSDCard")
 
 def ui_visible(started: bool, params: Params, CP: car.CarParams) -> bool:
-  return params.get_bool("DisplayConnected") if params is not None else False
+  return os.path.exists("/var/tmp/display_connected")
 
 procs = [
   #DaemonProcess("manage_athenad", "selfdrive.athena.manage_athenad", "AthenadPid"),
