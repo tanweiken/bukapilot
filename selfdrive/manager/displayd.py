@@ -28,6 +28,8 @@ def main():
         cloudlog.warning(f"displayd: display status changed to {status}")
         params.put_bool("DisplayConnected", status == "connected")
         if status == "connected":
+          # Ensure Weston is running. If it failed at boot due to no output, we restart it.
+          os.system("sudo systemctl restart weston")
           # Force kill any hanging UI process to ensure a clean start on the new display
           os.system("pkill -SIGKILL ui")
         
