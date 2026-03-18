@@ -14,6 +14,7 @@ from typing import Callable, Dict, Optional, Tuple
 
 from system.hardware.ka2.status_led.status_led import set_led, WS2812_SCRIPT_DEFAULT
 from cereal import messaging
+from openpilot.common.params import Params
 
 StateTuple = Tuple[str, str, Optional[str], str]  # (color, mode, rate, brightness)
 
@@ -51,6 +52,7 @@ class AlertLEDService:
 
         self._stop = threading.Event()
         self._sm = messaging.SubMaster([self.topic_cs, self.topic_dc])
+        self._params = Params()
 
         self._last_key: Optional[Tuple[str, str, Optional[str]]] = None
         self._last_state: Optional[StateTuple] = None
@@ -101,14 +103,22 @@ class AlertLEDService:
             # not-running fallback
             no_heartbeat = (self._last_msg_time_cs is None) or ((now - self._last_msg_time_cs) > self.not_running_timeout_s)
             if (not self._sm.alive[self.topic_cs]) or no_heartbeat:
-                key = ("YELLOW", "solid", None)
+                # Check for update state first
+                updater_state = self._params.get("UpdaterState", encoding='utf8')
+                if updater_state not in (None, "idle"):
+                    key = ("PURPLE", "blink", "slow")
+                    alert_type = "updating"
+                else:
+                    key = ("YELLOW", "solid", None)
+                    alert_type = "not_running"
+
                 if self._last_key != key:
-                    state = ("YELLOW", "solid", None, self.not_running_brightness)
-                    self._apply(state, active=False, alert_type="not_running", force=True)
+                    state = (key[0], key[1], key[2], self.not_running_brightness)
+                    self._apply(state, active=False, alert_type=alert_type, force=True)
                     self._last_state = state
                     self._last_key = key
                     if self.on_change:
-                        self._safe_on_change(False, "not_running", state)
+                        self._safe_on_change(False, alert_type, state)
 
     # mapping
     def _classify_key(self, alert_type: str, active: bool) -> Tuple[str, str, Optional[str]]:

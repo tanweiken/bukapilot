@@ -28,6 +28,7 @@ COLORS = {
   "CYAN":   "FF0088",
   "ORANGE": "00FF25",
   "YELLOW": "00DD88",
+  "PURPLE": "FFFF00",
 }
 
 def _dbg(msg: str):
