@@ -44,9 +44,6 @@ def only_offroad(started, params, CP: car.CarParams) -> bool:
 def format_sd(started: bool, params: Params, CP: car.CarParams) -> bool:
   return params.get_bool("FormatSDCard")
 
-def ui_visible(started: bool, params: Params, CP: car.CarParams) -> bool:
-  return os.path.exists("/var/tmp/display_connected")
-
 procs = [
   #DaemonProcess("manage_athenad", "selfdrive.athena.manage_athenad", "AthenadPid"),
 
@@ -65,7 +62,7 @@ procs = [
   #NativeProcess("mapsd", "selfdrive/navd", ["./mapsd"], only_onroad),
   PythonProcess("navmodeld", "selfdrive.modeld.navmodeld", only_onroad),
   NativeProcess("sensord", "system/sensord", ["./sensord"], only_onroad, enabled=not PC),
-  NativeProcess("ui", "selfdrive/ui", ["./ui"], ui_visible, watchdog_max_dt=(5 if not PC else None)),
+  NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
   NativeProcess("locationd", "selfdrive/locationd", ["./locationd"], only_onroad),
   NativeProcess("boardd", "selfdrive/boardd", ["./boardd"], always_run, enabled=False),
